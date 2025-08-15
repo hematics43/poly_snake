@@ -3,8 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Glowing Snake Game - Arrows Below</title>
+<title>Glowing Emoji Snake Game</title>
 <style>
+    #beeLink {
+  position: fixed;
+  bottom: 15px;
+  right: 15px;
+  padding: 8px 12px;
+  background: #111;
+  color: rgb(0, 0, 0);
+  border: 2px solid #0ff;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: bold;
+  text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
+  box-shadow: 0 0 15px #0ff, 0 0 30px #0ff inset;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+#beeLink:hover {
+  color: rgb(89, 3, 3);
+  text-shadow: 0 0 10px #ff0, 0 0 20px #ff0;
+  box-shadow: 0 0 20px #ff0, 0 0 40px #ff0 inset;
+}
+
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   display:flex;
@@ -36,7 +58,6 @@ label{
   text-shadow:0 0 5px #0ff,0 0 10px #0ff;
 }
 input[type=range]{
-  -webkit-appearance:none;
   width:120px;
   height:5px;
   background:#0ff;
@@ -44,7 +65,7 @@ input[type=range]{
   outline:none;
   box-shadow:0 0 10px #0ff;
 }
-button#shapeBtn{
+button{
   padding:8px 15px;
   border:2px solid #0ff;
   border-radius:10px;
@@ -94,22 +115,24 @@ canvas{
   text-align:center;
   line-height:60px;
   box-shadow:0 0 10px #0ff;
-  user-select:none;
 }
 </style>
 </head>
 <body>
-<h1>Glowing Neon Snake</h1>
+<h1>Glowing Emoji Snake</h1>
 <div id="controls">
   <label>Speed:
     <input type="range" id="speedRange" min="1" max="10" value="4">
   </label>
+  <label>Thickness:
+    <input type="range" id="thicknessRange" min="0.3" max="1.5" step="0.1" value="1">
+  </label>
   <button id="shapeBtn">Shape: Square</button>
+  <button id="modeBtn">Mode: Emoji</button>
 </div>
 <div id="score">Score: 0</div>
 <canvas id="gameCanvas"></canvas>
 
-<!-- Mobile arrow buttons below -->
 <div id="arrowControls">
   <div class="row">
     <button class="arrowBtn" data-dir="up">↑</button>
@@ -126,18 +149,44 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const speedRange = document.getElementById('speedRange');
+const thicknessRange = document.getElementById('thicknessRange');
 const shapeBtn = document.getElementById('shapeBtn');
+const modeBtn = document.getElementById('modeBtn');
 const arrowBtns = document.querySelectorAll('.arrowBtn');
 
 let gameRunning = true;
 let shapes = ['square','circle','rounded','triangle','diamond','hexagon','star','heart'];
 let shapeIndex = 0;
 let snakeShape = shapes[shapeIndex];
+let mode = 'emoji'; // emoji or shape
 let speed = parseInt(speedRange.value);
+let snakeThickness = parseFloat(thicknessRange.value);
 let count = 0;
 let grid = 20;
 let cols, rows;
 let snake, apple, score;
+
+let faceEmojis = [
+  '😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚',
+  '☺', '🙂', '🤗', '🤔', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '😴',
+  '😌', '🤓', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🤑', '😲', '☹', '🙁', '😖', '😞',
+  '😟', '😤', '😥', '😦', '😧', '😨', '😩', '😪', '😫', '😬', '😭', '😮', '😯', '😰', '😱', '😲', '😳',
+  '😴', '😵', '😶', '😷', '😸', '😹', '😺', '😻', '😼', '😽', '😾', '😿', '🙀', '🙈', '🙉', '🙊', '🙋',
+  '🙌', '🙍', '🙎', '🙏'
+];
+
+const colors = [
+  '#0ff','#f0f','#ff0','#f80','#0f0','#08f','#f08','#ff1493','#00fa9a','#7fff00',
+  '#1e90ff','#ff4500','#ffd700','#00ced1','#ff69b4','#adff2f','#ffa500','#7cfc00','#ff6347',
+  '#40e0d0','#ff00ff','#00ff7f','#ff1493','#ff7f50','#7b68ee','#00bfff','#32cd32','#ff8c00','#ff69b4',
+  '#00ff00','#ff4500','#7fff00','#ff00ff','#1e90ff','#ff6347','#ffd700','#00ced1','#ff1493','#adff2f',
+  '#ff7f50','#00fa9a','#7cfc00','#ff69b4','#40e0d0','#ff00ff','#ff6347','#32cd32','#ff8c00','#7b68ee',
+  '#00bfff','#ff4500','#00ff7f','#ff1493','#ff7f50','#7fff00','#ff69b4','#00ced1','#ffd700','#1e90ff',
+  '#adff2f','#ff4500','#00fa9a','#ff00ff','#32cd32','#7cfc00','#ff6347','#40e0d0','#ff1493','#ff8c00',
+  '#7b68ee','#00bfff','#ff69b4','#ff7f50','#00ff7f','#ff4500','#ff00ff','#ff1493','#ffd700','#00ced1',
+  '#7fff00','#adff2f','#ff6347','#00fa9a','#ff8c00','#32cd32','#1e90ff','#40e0d0','#7cfc00','#ff69b4',
+  '#ff1493','#00bfff','#ff7f50','#00ff7f','#7b68ee','#ff4500','#ff00ff','#ffd700','#adff2f','#00ced1'
+];
 
 function resizeCanvas(){
   canvas.width = canvas.clientWidth;
@@ -164,49 +213,51 @@ function resetGame(){
   score = 0;
   scoreEl.textContent = "Score: 0";
   speed = parseInt(speedRange.value);
+  snakeThickness = parseFloat(thicknessRange.value);
 }
 
 function getRandomInt(min,max){return Math.floor(Math.random()*(max-min))+min;}
 
-const colors = ['#0ff','#f0f','#ff0','#f80','#0f0','#08f','#f08'];
-
-function drawCell(x,y,color){
+function drawCell(x, y, color){
   ctx.fillStyle = color;
   ctx.shadowColor = color;
   ctx.shadowBlur = 20;
+  let size = grid * snakeThickness - 2;
+  let offset = (grid - size)/2;
+
   switch(snakeShape){
     case 'circle':
       ctx.beginPath();
-      ctx.arc(x+grid/2,y+grid/2,grid/2-2,0,Math.PI*2);
+      ctx.arc(x + grid/2, y + grid/2, size/2, 0, Math.PI*2);
       ctx.fill();
       break;
     case 'rounded':
-      ctx.fillRect(x+2,y+2,grid-4,grid-4);
+      ctx.fillRect(x + offset, y + offset, size, size);
       ctx.beginPath();
-      ctx.arc(x+grid/2,y+grid/2,grid/4,0,Math.PI*2);
+      ctx.arc(x + grid/2, y + grid/2, size/4, 0, Math.PI*2);
       ctx.fill();
       break;
     case 'triangle':
       ctx.beginPath();
-      ctx.moveTo(x+grid/2,y+2);
-      ctx.lineTo(x+grid-2,y+grid-2);
-      ctx.lineTo(x+2,y+grid-2);
+      ctx.moveTo(x + grid/2, y + offset);
+      ctx.lineTo(x + grid - offset, y + grid - offset);
+      ctx.lineTo(x + offset, y + grid - offset);
       ctx.closePath();
       ctx.fill();
       break;
     case 'diamond':
       ctx.beginPath();
-      ctx.moveTo(x+grid/2,y+2);
-      ctx.lineTo(x+grid-2,y+grid/2);
-      ctx.lineTo(x+grid/2,y+grid-2);
-      ctx.lineTo(x+2,y+grid/2);
+      ctx.moveTo(x + grid/2, y + offset);
+      ctx.lineTo(x + grid - offset, y + grid/2);
+      ctx.lineTo(x + grid/2, y + grid - offset);
+      ctx.lineTo(x + offset, y + grid/2);
       ctx.closePath();
       ctx.fill();
       break;
     case 'hexagon':
       let cx = x + grid/2;
       let cy = y + grid/2;
-      let r = grid/2-2;
+      let r = size/2;
       ctx.beginPath();
       for(let i=0;i<6;i++){
         let angle = Math.PI/3*i;
@@ -218,7 +269,7 @@ function drawCell(x,y,color){
     case 'star':
       let sx = x + grid/2;
       let sy = y + grid/2;
-      let outerR = grid/2-2;
+      let outerR = size/2;
       let innerR = outerR/2.5;
       ctx.beginPath();
       for(let i=0;i<5;i++){
@@ -234,15 +285,24 @@ function drawCell(x,y,color){
       let hx = x + grid/2;
       let hy = y + grid/2;
       ctx.beginPath();
-      ctx.moveTo(hx, hy + grid/4);
-      ctx.bezierCurveTo(hx + grid/2, hy - grid/4, hx + grid/4, hy - grid/2, hx, hy - grid/6);
-      ctx.bezierCurveTo(hx - grid/4, hy - grid/2, hx - grid/2, hy - grid/4, hx, hy + grid/4);
+      ctx.moveTo(hx, hy + size/4);
+      ctx.bezierCurveTo(hx + size/2, hy - size/4, hx + size/4, hy - size/2, hx, hy - size/6);
+      ctx.bezierCurveTo(hx - size/4, hy - size/2, hx - size/2, hy - size/4, hx, hy + size/4);
       ctx.closePath();
       ctx.fill();
       break;
-    default: // square
-      ctx.fillRect(x,y,grid-2,grid-2);
+    default:
+      ctx.fillRect(x + offset, y + offset, size, size);
   }
+}
+
+function drawEmoji(emoji,x,y){
+  ctx.font = grid * snakeThickness + 'px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#0ff';
+  ctx.shadowBlur = 15;
+  ctx.fillText(emoji, x + grid/2, y + grid/2);
 }
 
 function loop(){
@@ -263,11 +323,22 @@ function loop(){
   snake.cells.unshift({x:snake.x,y:snake.y});
   if(snake.cells.length>snake.maxCells) snake.cells.pop();
 
-  drawCell(apple.x,apple.y,'#f0f');
+  // Draw apple/food
+  if(mode==='emoji'){
+    drawEmoji(faceEmojis[score%faceEmojis.length], apple.x, apple.y);
+  } else {
+    const foodColor = colors[Math.floor(Math.random()*colors.length)];
+    drawCell(apple.x, apple.y, foodColor);
+  }
 
   snake.cells.forEach((cell,index)=>{
-    const color = colors[index%colors.length];
-    drawCell(cell.x,cell.y,color);
+    if(mode==='emoji'){
+      const emoji = faceEmojis[index % faceEmojis.length];
+      drawEmoji(emoji, cell.x, cell.y);
+    } else {
+      const color = colors[index % colors.length];
+      drawCell(cell.x, cell.y, color);
+    }
 
     if(cell.x===apple.x && cell.y===apple.y){
       snake.maxCells++;
@@ -275,7 +346,7 @@ function loop(){
       scoreEl.textContent="Score: "+score;
       apple.x = getRandomInt(0,cols)*grid;
       apple.y = getRandomInt(0,rows)*grid;
-      if(speed>1) speed-=0.1;
+      speed = Math.max(1, speed - 0.1);
     }
 
     for(let i=index+1;i<snake.cells.length;i++){
@@ -294,7 +365,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowDown' && snake.dy===0){snake.dx=0; snake.dy=grid;}
 });
 
-// Mobile arrows below
+// Mobile arrows
 arrowBtns.forEach(btn=>{
   btn.addEventListener('touchstart',()=>{
     const dir = btn.dataset.dir;
@@ -305,7 +376,7 @@ arrowBtns.forEach(btn=>{
   });
 });
 
-// Swipe support
+// Swipe
 let touchStartX = null;
 let touchStartY = null;
 canvas.addEventListener('touchstart',e=>{
@@ -328,15 +399,21 @@ canvas.addEventListener('touchmove',e=>{
   touchStartY=null;
 });
 
-// UI controls
+// UI
 speedRange.addEventListener('input',()=>{speed=parseInt(speedRange.value);});
+thicknessRange.addEventListener('input',()=>{snakeThickness=parseFloat(thicknessRange.value);});
 shapeBtn.addEventListener('click',()=>{
   shapeIndex = (shapeIndex+1)%shapes.length;
   snakeShape = shapes[shapeIndex];
-  shapeBtn.textContent = 'Shape: ' + snakeShape.charAt(0).toUpperCase() + snakeShape.slice(1);
+  shapeBtn.textContent = 'Shape: ' + snakeShape.charAt(0).toUpperCase()+snakeShape.slice(1);
+});
+modeBtn.addEventListener('click',()=>{
+  mode = mode==='emoji'?'shape':'emoji';
+  modeBtn.textContent = 'Mode: ' + (mode==='emoji'?'Emoji':'Shapes');
 });
 resetGame();
 requestAnimationFrame(loop);
 </script>
+<a href="https://hematics43.github.io/beecodeworld/" target="_blank" id="beeLink">MORE CODE</a>
 </body>
 </html>
