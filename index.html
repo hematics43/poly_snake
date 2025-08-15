@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Glowing Emoji Snake Game</title>
+<title>🐍-Snake-🐍</title>
 <style>
-    #beeLink {
+#beeLink {
   position: fixed;
-  bottom: 15px;
+  top: 15px;
   right: 15px;
   padding: 8px 12px;
   background: #111;
-  color: rgb(0, 0, 0);
+  color: #0ff;
   border: 2px solid #0ff;
   border-radius: 10px;
   text-decoration: none;
@@ -21,6 +21,12 @@
   transition: all 0.3s ease;
   z-index: 1000;
 }
+#beeLink:hover {
+  color: #ff0;
+  text-shadow: 0 0 10px #ff0, 0 0 20px #ff0;
+  box-shadow: 0 0 20px #ff0, 0 0 40px #ff0 inset;
+}
+
 #beeLink:hover {
   color: rgb(89, 3, 3);
   text-shadow: 0 0 10px #ff0, 0 0 20px #ff0;
@@ -118,8 +124,7 @@ canvas{
 }
 </style>
 </head>
-<body>
-<h1>Glowing Emoji Snake</h1>
+<body><h1>🐍 🔥 😎</h1>
 <div id="controls">
   <label>Speed:
     <input type="range" id="speedRange" min="1" max="10" value="4">
@@ -414,6 +419,6 @@ modeBtn.addEventListener('click',()=>{
 resetGame();
 requestAnimationFrame(loop);
 </script>
-<a href="https://hematics43.github.io/beecodeworld/" target="_blank" id="beeLink">MORE CODE</a>
+<a href="https://hematics43.github.io/beecodeworld/" target="_blank" id="beeLink">More links</a>
 </body>
 </html>
