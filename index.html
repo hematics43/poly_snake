@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glowing Snake Game</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  align-items:center;
+  height:100vh;
+  background:#0f0f0f;
+  font-family:'Courier New', monospace;
+  overflow:hidden;
+}
+h1{
+  margin-top:10px;
+  color:#0ff;
+  text-shadow:0 0 5px #0ff,0 0 10px #0ff,0 0 20px #0ff,0 0 40px #0ff;
+  font-size:2rem;
+  text-align:center;
+}
+#controls{
+  display:flex;
+  gap:20px;
+  align-items:center;
+  justify-content:center;
+  margin-top:5px;
+  flex-wrap:wrap;
+}
+label{
+  color:#0ff;
+  text-shadow:0 0 5px #0ff,0 0 10px #0ff;
+}
+input[type=range]{
+  -webkit-appearance:none;
+  width:120px;
+  height:5px;
+  background:#0ff;
+  border-radius:5px;
+  outline:none;
+  box-shadow:0 0 10px #0ff;
+}
+button.shapeBtn{
+  padding:8px 15px;
+  border:2px solid #0ff;
+  border-radius:10px;
+  color:#0ff;
+  background:#111;
+  cursor:pointer;
+  text-shadow:0 0 5px #0ff;
+  box-shadow:0 0 10px #0ff;
+}
+#score{
+  color:#0ff;
+  font-size:1.5rem;
+  text-shadow:0 0 5px #0ff,0 0 10px #0ff,0 0 20px #0ff;
+  margin-top:5px;
+}
+canvas{
+  background:#111;
+  border:2px solid #0ff;
+  box-shadow:0 0 20px #0ff,0 0 40px #0ff inset;
+  border-radius:20px;
+  touch-action:none;
+  width:90vmin;
+  height:90vmin;
+  margin-top:10px;
+}
+</style>
+</head>
+<body>
+<h1>Glowing Neon Snake</h1>
+<div id="controls">
+  <label>Speed:
+    <input type="range" id="speedRange" min="1" max="10" value="4">
+  </label>
+  <button class="shapeBtn" data-shape="square">Square</button>
+  <button class="shapeBtn" data-shape="circle">Circle</button>
+  <button class="shapeBtn" data-shape="rounded">Rounded</button>
+</div>
+<div id="score">Score: 0</div>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const speedRange = document.getElementById('speedRange');
+const shapeBtns = document.querySelectorAll('.shapeBtn');
+
+let gameRunning = true;
+let snakeShape = 'square';
+let speed = parseInt(speedRange.value);
+let count = 0;
+let grid = 20;
+let cols, rows;
+let snake, apple, score;
+
+function resizeCanvas(){
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+  cols = Math.floor(canvas.width/grid);
+  rows = Math.floor(canvas.height/grid);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function resetGame(){
+  snake = {
+    x: Math.floor(cols/2)*grid,
+    y: Math.floor(rows/2)*grid,
+    dx: grid,
+    dy: 0,
+    cells: [],
+    maxCells:4
+  };
+  apple = {
+    x: getRandomInt(0, cols)*grid,
+    y: getRandomInt(0, rows)*grid
+  };
+  score = 0;
+  scoreEl.textContent = "Score: 0";
+  speed = parseInt(speedRange.value);
+}
+
+function getRandomInt(min,max){return Math.floor(Math.random()*(max-min))+min;}
+
+const colors = ['#0ff','#f0f','#ff0','#f80','#0f0','#08f','#f08'];
+
+function drawCell(x,y,color){
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 20;
+  if(snakeShape==='circle'){
+    ctx.beginPath();
+    ctx.arc(x+grid/2,y+grid/2,grid/2-2,0,Math.PI*2);
+    ctx.fill();
+  }else if(snakeShape==='rounded'){
+    ctx.fillRect(x+2,y+2,grid-4,grid-4);
+    ctx.beginPath();
+    ctx.arc(x+grid/2,y+grid/2,grid/4,0,Math.PI*2);
+    ctx.fill();
+  }else{ // square
+    ctx.fillRect(x,y,grid-2,grid-2);
+  }
+}
+
+function loop(){
+  if(!gameRunning) return;
+  requestAnimationFrame(loop);
+  if(++count<speed) return;
+  count=0;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+
+  if(snake.x<0 || snake.x>=canvas.width || snake.y<0 || snake.y>=canvas.height){
+    resetGame();
+    return;
+  }
+
+  snake.cells.unshift({x:snake.x,y:snake.y});
+  if(snake.cells.length>snake.maxCells) snake.cells.pop();
+
+  drawCell(apple.x,apple.y,'#f0f');
+
+  snake.cells.forEach((cell,index)=>{
+    const color = colors[index%colors.length];
+    drawCell(cell.x,cell.y,color);
+
+    if(cell.x===apple.x && cell.y===apple.y){
+      snake.maxCells++;
+      score++;
+      scoreEl.textContent="Score: "+score;
+      apple.x = getRandomInt(0,cols)*grid;
+      apple.y = getRandomInt(0,rows)*grid;
+      if(speed>1) speed-=0.1;
+    }
+
+    for(let i=index+1;i<snake.cells.length;i++){
+      if(cell.x===snake.cells[i].x && cell.y===snake.cells[i].y){
+        resetGame();
+      }
+    }
+  });
+}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft' && snake.dx===0){snake.dx=-grid; snake.dy=0;}
+  else if(e.key==='ArrowUp' && snake.dy===0){snake.dx=0; snake.dy=-grid;}
+  else if(e.key==='ArrowRight' && snake.dx===0){snake.dx=grid; snake.dy=0;}
+  else if(e.key==='ArrowDown' && snake.dy===0){snake.dx=0; snake.dy=grid;}
+});
+
+// Touch swipe
+let touchStartX = null;
+let touchStartY = null;
+canvas.addEventListener('touchstart',e=>{
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+});
+canvas.addEventListener('touchmove',e=>{
+  const touch = e.touches[0];
+  const dx = touch.clientX-touchStartX;
+  const dy = touch.clientY-touchStartY;
+  if(Math.abs(dx)>Math.abs(dy)){
+    if(dx>0 && snake.dx===0){snake.dx=grid; snake.dy=0;}
+    else if(dx<0 && snake.dx===0){snake.dx=-grid; snake.dy=0;}
+  }else{
+    if(dy>0 && snake.dy===0){snake.dx=0; snake.dy=grid;}
+    else if(dy<0 && snake.dy===0){snake.dx=0; snake.dy=-grid;}
+  }
+  touchStartX=null;
+  touchStartY=null;
+});
+
+// UI controls
+speedRange.addEventListener('input',()=>{speed=parseInt(speedRange.value);});
+shapeBtns.forEach(btn=>{btn.addEventListener('click',()=>{snakeShape=btn.dataset.shape;});});
+
+resetGame();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
