@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Glowing Snake Game - Shape Cycle</title>
+<title>Glowing Snake Game - Arrows Below</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
@@ -36,6 +36,7 @@ label{
   text-shadow:0 0 5px #0ff,0 0 10px #0ff;
 }
 input[type=range]{
+  -webkit-appearance:none;
   width:120px;
   height:5px;
   background:#0ff;
@@ -70,6 +71,31 @@ canvas{
   height:90vmin;
   margin-top:10px;
 }
+/* Arrow buttons below */
+#arrowControls{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin-top:15px;
+  gap:10px;
+}
+.row{
+  display:flex;
+  gap:10px;
+}
+.arrowBtn{
+  width:60px;
+  height:60px;
+  background:#111;
+  border:2px solid #0ff;
+  border-radius:10px;
+  color:#0ff;
+  font-size:2rem;
+  text-align:center;
+  line-height:60px;
+  box-shadow:0 0 10px #0ff;
+  user-select:none;
+}
 </style>
 </head>
 <body>
@@ -83,12 +109,25 @@ canvas{
 <div id="score">Score: 0</div>
 <canvas id="gameCanvas"></canvas>
 
+<!-- Mobile arrow buttons below -->
+<div id="arrowControls">
+  <div class="row">
+    <button class="arrowBtn" data-dir="up">↑</button>
+  </div>
+  <div class="row">
+    <button class="arrowBtn" data-dir="left">←</button>
+    <button class="arrowBtn" data-dir="down">↓</button>
+    <button class="arrowBtn" data-dir="right">→</button>
+  </div>
+</div>
+
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const speedRange = document.getElementById('speedRange');
 const shapeBtn = document.getElementById('shapeBtn');
+const arrowBtns = document.querySelectorAll('.arrowBtn');
 
 let gameRunning = true;
 let shapes = ['square','circle','rounded','triangle','diamond','hexagon','star','heart'];
@@ -255,7 +294,18 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowDown' && snake.dy===0){snake.dx=0; snake.dy=grid;}
 });
 
-// Touch swipe
+// Mobile arrows below
+arrowBtns.forEach(btn=>{
+  btn.addEventListener('touchstart',()=>{
+    const dir = btn.dataset.dir;
+    if(dir==='up' && snake.dy===0){snake.dx=0; snake.dy=-grid;}
+    if(dir==='down' && snake.dy===0){snake.dx=0; snake.dy=grid;}
+    if(dir==='left' && snake.dx===0){snake.dx=-grid; snake.dy=0;}
+    if(dir==='right' && snake.dx===0){snake.dx=grid; snake.dy=0;}
+  });
+});
+
+// Swipe support
 let touchStartX = null;
 let touchStartY = null;
 canvas.addEventListener('touchstart',e=>{
@@ -285,7 +335,6 @@ shapeBtn.addEventListener('click',()=>{
   snakeShape = shapes[shapeIndex];
   shapeBtn.textContent = 'Shape: ' + snakeShape.charAt(0).toUpperCase() + snakeShape.slice(1);
 });
-
 resetGame();
 requestAnimationFrame(loop);
 </script>
