@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Glowing Snake Game</title>
+<title>Glowing Snake Game - Shape Cycle</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
@@ -25,7 +25,7 @@ h1{
 }
 #controls{
   display:flex;
-  gap:20px;
+  gap:15px;
   align-items:center;
   justify-content:center;
   margin-top:5px;
@@ -36,7 +36,6 @@ label{
   text-shadow:0 0 5px #0ff,0 0 10px #0ff;
 }
 input[type=range]{
-  -webkit-appearance:none;
   width:120px;
   height:5px;
   background:#0ff;
@@ -44,7 +43,7 @@ input[type=range]{
   outline:none;
   box-shadow:0 0 10px #0ff;
 }
-button.shapeBtn{
+button#shapeBtn{
   padding:8px 15px;
   border:2px solid #0ff;
   border-radius:10px;
@@ -53,6 +52,7 @@ button.shapeBtn{
   cursor:pointer;
   text-shadow:0 0 5px #0ff;
   box-shadow:0 0 10px #0ff;
+  font-size:0.9rem;
 }
 #score{
   color:#0ff;
@@ -78,9 +78,7 @@ canvas{
   <label>Speed:
     <input type="range" id="speedRange" min="1" max="10" value="4">
   </label>
-  <button class="shapeBtn" data-shape="square">Square</button>
-  <button class="shapeBtn" data-shape="circle">Circle</button>
-  <button class="shapeBtn" data-shape="rounded">Rounded</button>
+  <button id="shapeBtn">Shape: Square</button>
 </div>
 <div id="score">Score: 0</div>
 <canvas id="gameCanvas"></canvas>
@@ -90,10 +88,12 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const speedRange = document.getElementById('speedRange');
-const shapeBtns = document.querySelectorAll('.shapeBtn');
+const shapeBtn = document.getElementById('shapeBtn');
 
 let gameRunning = true;
-let snakeShape = 'square';
+let shapes = ['square','circle','rounded','triangle','diamond','hexagon','star','heart'];
+let shapeIndex = 0;
+let snakeShape = shapes[shapeIndex];
 let speed = parseInt(speedRange.value);
 let count = 0;
 let grid = 20;
@@ -135,17 +135,74 @@ function drawCell(x,y,color){
   ctx.fillStyle = color;
   ctx.shadowColor = color;
   ctx.shadowBlur = 20;
-  if(snakeShape==='circle'){
-    ctx.beginPath();
-    ctx.arc(x+grid/2,y+grid/2,grid/2-2,0,Math.PI*2);
-    ctx.fill();
-  }else if(snakeShape==='rounded'){
-    ctx.fillRect(x+2,y+2,grid-4,grid-4);
-    ctx.beginPath();
-    ctx.arc(x+grid/2,y+grid/2,grid/4,0,Math.PI*2);
-    ctx.fill();
-  }else{ // square
-    ctx.fillRect(x,y,grid-2,grid-2);
+  switch(snakeShape){
+    case 'circle':
+      ctx.beginPath();
+      ctx.arc(x+grid/2,y+grid/2,grid/2-2,0,Math.PI*2);
+      ctx.fill();
+      break;
+    case 'rounded':
+      ctx.fillRect(x+2,y+2,grid-4,grid-4);
+      ctx.beginPath();
+      ctx.arc(x+grid/2,y+grid/2,grid/4,0,Math.PI*2);
+      ctx.fill();
+      break;
+    case 'triangle':
+      ctx.beginPath();
+      ctx.moveTo(x+grid/2,y+2);
+      ctx.lineTo(x+grid-2,y+grid-2);
+      ctx.lineTo(x+2,y+grid-2);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'diamond':
+      ctx.beginPath();
+      ctx.moveTo(x+grid/2,y+2);
+      ctx.lineTo(x+grid-2,y+grid/2);
+      ctx.lineTo(x+grid/2,y+grid-2);
+      ctx.lineTo(x+2,y+grid/2);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'hexagon':
+      let cx = x + grid/2;
+      let cy = y + grid/2;
+      let r = grid/2-2;
+      ctx.beginPath();
+      for(let i=0;i<6;i++){
+        let angle = Math.PI/3*i;
+        ctx.lineTo(cx + r*Math.cos(angle), cy + r*Math.sin(angle));
+      }
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'star':
+      let sx = x + grid/2;
+      let sy = y + grid/2;
+      let outerR = grid/2-2;
+      let innerR = outerR/2.5;
+      ctx.beginPath();
+      for(let i=0;i<5;i++){
+        let angle = i * 2 * Math.PI /5 - Math.PI/2;
+        ctx.lineTo(sx + outerR*Math.cos(angle), sy + outerR*Math.sin(angle));
+        angle += Math.PI/5;
+        ctx.lineTo(sx + innerR*Math.cos(angle), sy + innerR*Math.sin(angle));
+      }
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'heart':
+      let hx = x + grid/2;
+      let hy = y + grid/2;
+      ctx.beginPath();
+      ctx.moveTo(hx, hy + grid/4);
+      ctx.bezierCurveTo(hx + grid/2, hy - grid/4, hx + grid/4, hy - grid/2, hx, hy - grid/6);
+      ctx.bezierCurveTo(hx - grid/4, hy - grid/2, hx - grid/2, hy - grid/4, hx, hy + grid/4);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    default: // square
+      ctx.fillRect(x,y,grid-2,grid-2);
   }
 }
 
@@ -223,7 +280,11 @@ canvas.addEventListener('touchmove',e=>{
 
 // UI controls
 speedRange.addEventListener('input',()=>{speed=parseInt(speedRange.value);});
-shapeBtns.forEach(btn=>{btn.addEventListener('click',()=>{snakeShape=btn.dataset.shape;});});
+shapeBtn.addEventListener('click',()=>{
+  shapeIndex = (shapeIndex+1)%shapes.length;
+  snakeShape = shapes[shapeIndex];
+  shapeBtn.textContent = 'Shape: ' + snakeShape.charAt(0).toUpperCase() + snakeShape.slice(1);
+});
 
 resetGame();
 requestAnimationFrame(loop);
